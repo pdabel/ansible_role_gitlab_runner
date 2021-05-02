@@ -1,0 +1,20 @@
+- name: Add an Apt signing key
+  ansible.builtin.apt_key:
+    url: https://packages.gitlab.com/runner/gitlab-runner/gpgkey
+    state: present
+
+- name: Add gitlab repository into sources list
+  ansible.builtin.apt_repository:
+    repo: deb https://packages.gitlab.com/runner/gitlab-runner/ubuntu/ {{ ansible_distribution_release }} main
+    state: present
+    filename: runner_gitlab-runner
+
+- name: Install the gitlab runner package
+  ansible.builtin.apt:
+    name: "gitlab-runner"
+    state: present
+  register: apt_action
+  retries: 100
+  until: apt_action is success or ('Failed to lock apt for exclusive operation' not in apt_action.msg and '/var/lib/dpkg/lock' not in apt_action.msg)
+  environment:
+    GITLAB_RUNNER_DISABLE_SKEL: true
